@@ -16,87 +16,59 @@ async function getEmployees({page = 1, size = PAGE_SIZE_DEFAULT, activeOnly = tr
      LIMIT ? OFFSET ?`,
     [size, offset]
   );
-  return {rows, count, page, size, activeOnly};
+  return {rows, count};
 }
 
 export default async function EmployeesPage({searchParams}) {
   const page = Number(searchParams?.page || 1);
   const size = Number(searchParams?.size || PAGE_SIZE_DEFAULT);
   const activeOnly = (searchParams?.active || '1') === '1';
+
   const {rows, count} = await getEmployees({page, size, activeOnly});
   const totalPages = Math.max(1, Math.ceil(count / size));
+  const activeFlag = activeOnly ? 1 : 0;
+
+  const q = (p, s, a) => ({pathname: '/employees', query: {page: p, size: s, active: a}});
 
   return (
     <main className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Employees</h1>
-        <div className="flex items-center gap-2">
-          <Link
-            href={{pathname: '/employees', query: {page: 1, size, active: activeOnly ? 1 : 0}}}
-            className="underline"
-          >
-            First
+        <div className="flex items-center gap-3 text-sm">
+          <span>Active only:</span>
+          <Link className="underline" href={q(1, size, activeOnly ? 0 : 1)}>
+            {activeOnly ? 'On (click to show all)' : 'Off (click to show active)'}
           </Link>
-          <Link
-            href={{
-              pathname: '/employees',
-              query: {page: Math.max(1, page - 1), size, active: activeOnly ? 1 : 0},
-            }}
-            className="underline"
-          >
-            Prev
-          </Link>
-          <span className="px-2">
-            Page {page} / {totalPages}
-          </span>
-          <Link
-            href={{
-              pathname: '/employees',
-              query: {page: Math.min(totalPages, page + 1), size, active: activeOnly ? 1 : 0},
-            }}
-            className="underline"
-          >
-            Next
-          </Link>
-          <Link
-            href={{
-              pathname: '/employees',
-              query: {page: totalPages, size, active: activeOnly ? 1 : 0},
-            }}
-            className="underline"
-          >
-            Last
-          </Link>
+          <span>| Page size:</span>
+          {[10, 20, 50].map((s) => (
+            <Link
+              key={s}
+              className={`underline ${s === size ? 'font-semibold' : ''}`}
+              href={q(1, s, activeFlag)}
+            >
+              {s}
+            </Link>
+          ))}
         </div>
       </div>
 
-      <form className="flex items-center gap-3 border rounded-xl p-3 w-full max-w-xl">
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            defaultChecked={activeOnly}
-            onChange={(e) => {
-              window.location.href = `/employees?active=${
-                e.target.checked ? 1 : 0
-              }&page=1&size=${size}`;
-            }}
-          />
-          Active only
-        </label>
-        <select
-          defaultValue={size}
-          onChange={(e) => {
-            window.location.href = `/employees?active=${activeOnly ? 1 : 0}&page=1&size=${
-              e.target.value
-            }`;
-          }}
-          className="border rounded px-2 py-1 text-sm"
-        >
-          <option value="10">10</option>
-          <option value="20">20</option>
-          <option value="50">50</option>
-        </select>
-      </form>
+      <div className="flex items-center gap-2 text-sm">
+        <Link className="underline" href={q(1, size, activeFlag)}>
+          First
+        </Link>
+        <Link className="underline" href={q(Math.max(1, page - 1), size, activeFlag)}>
+          Prev
+        </Link>
+        <span className="px-2">
+          Page {page} / {totalPages}
+        </span>
+        <Link className="underline" href={q(Math.min(totalPages, page + 1), size, activeFlag)}>
+          Next
+        </Link>
+        <Link className="underline" href={q(totalPages, size, activeFlag)}>
+          Last
+        </Link>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm border rounded-xl overflow-hidden">
